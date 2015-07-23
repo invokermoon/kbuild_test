@@ -3,7 +3,6 @@ T   ?=$(shell 'pwd')
 OUT ?=$(T)/out
 OUTPUT_DIR ?=$(T)/out
 
-SRC ?=main_code
 
 $(info Build PATH****************************************)
 $(info )
