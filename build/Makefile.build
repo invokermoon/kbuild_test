@@ -30,6 +30,17 @@ endif
 
 # If no include root path specfied, assume default
 INC_ROOT ?= $(CURDIR)/include
+ANSI_OFF="\033[m"
+ANSI_RED="\033[0;32;31m"
+ANSI_LIGHT_RED="\033[1;31m"
+ANSI_GREEN="\033[0;32;32m"
+ANSI_BLUE="\033[0;32;34m"
+ANSI_BROWN="\033[0;33m"
+ANSI_YELLOW="\033[1;33m"
+ANSI_WHITE="\033[1;37m"
+
+
+
 
 # All targets added to the PHONY variable will end up in .PHONY
 # DO NOT add targets that are actual files to this: if you want a target to be
@@ -140,6 +151,11 @@ $(info [6]OUT_SRC:$(OUT_SRC))
 # Prepend the objects and archives with the actual build SRC
 obj-y		:= $(addprefix $(OUT_SRC)/,$(obj-y))
 subdir-obj-y := $(addprefix $(OUT_SRC)/,$(subdir-obj-y))
+#eg: obj-y += XXX.so   XXX-obj-y :=XXX.o XXX.o
+#result: modules-obj-y=$(path)/=XXX.o $(path)/=XXX.o
+modules-obj-y :=$(if $(filter %.so, $(obj-y)),$(addprefix $(OUT_SRC)/, $($(obj-y:$(OUT_SRC)/%.so=%-obj-y))),)
+$(info [7]modules-obj-y:$(modules-obj-y))
+$(info [7]y:$($(obj-y:$(OUT_SRC)/%.so=%-obj-y)))
 $(info [7]subdir-y:$(subdir-y))
 $(info [7]subdir-obj-y:$(subdir-obj-y))
 $(info [7]obj-y:$(obj-y))
@@ -204,6 +220,11 @@ $(OUT_SRC)/%.o: $(SRC)/%.c $(OUT_SRC)/c.flags
 	@echo $(ANSI_RED)"[kCC]"$(ANSI_OFF) $(@:$(T)/%=%)
 	$(AT)$(CC) $(COMPUTED_CFLAGS) $(CFLAGS_$(notdir $@)) -c -o $@ $<
 
+# Build C files
+$(OUT_SRC)/%.so: $(modules-obj-y)
+	$(AT)$(CC) $(COMPUTED_CFLAGS) $(CFLAGS_$(notdir $@)) -shared -fPIC $^ -o $@
+
+
 # Build S file (assembly)
 $(OUT_SRC)/%.o: $(SRC)/%.s $(OUT_SRC)/c.flags
 	@echo $(ANSI_RED)"[kAS]"$(ANSI_OFF) $(@:$(T)/%=%)
@@ -219,6 +240,8 @@ $(OUT_SRC)/built-in.a: $(obj-y) | $(OUT_SRC)
 	@echo $(ANSI_RED)"[kAR]"$(ANSI_OFF) $(@:$(T)/%=%)
 	$(AT)rm -f $@
 	$(AT)$(AR) -rcT $@ $(obj-y)
+
+
 
 # Remember CFLAGS used to compile files in this directory
 $(OUT_SRC)/c.flags: $(KCONFIG) | $(OUT_SRC)
